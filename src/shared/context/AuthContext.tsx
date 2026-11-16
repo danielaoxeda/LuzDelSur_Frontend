@@ -2,17 +2,21 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
+import { isAxiosError } from 'axios';
 import { authService } from '../../features/auth/services/auth.service';
 import type {
   ActorRole,
+  AuthResponse,
   AuthUser,
   LoginRequest,
   RegisterRequest,
 } from '../../features/auth/types/auth.types';
+import { SESSION_EXPIRED_EVENT, session } from '../services/session';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -24,16 +28,9 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const USER_STORAGE_KEY = 'lds_user';
-
 function loadInitialUser(): AuthUser | null {
-  try {
-    const raw = localStorage.getItem(USER_STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as AuthUser;
-  } catch {
-    return null;
-  }
+  // Sin token no hay sesion valida, aunque quede un usuario guardado.
+  return session.getToken() ? session.getUser() : null;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -51,18 +48,15 @@ export function getHomeRouteForRole(role: ActorRole): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => loadInitialUser());
 
-  const persistSession = useCallback((token: string, authUser: AuthUser) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('actor_id', authUser.id);
-    localStorage.setItem('actor_role', authUser.role);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authUser));
-    setUser(authUser);
+  const persistSession = useCallback((response: AuthResponse) => {
+    session.save(response.token, response.refreshToken, response.user);
+    setUser(response.user);
   }, []);
 
   const login = useCallback(
     async (request: LoginRequest): Promise<AuthUser> => {
       const response = await authService.login(request);
-      persistSession(response.token, response.user);
+      persistSession(response);
       return response.user;
     },
     [persistSession]
@@ -71,18 +65,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(
     async (request: RegisterRequest): Promise<AuthUser> => {
       const response = await authService.register(request);
-      persistSession(response.token, response.user);
+      persistSession(response);
       return response.user;
     },
     [persistSession]
   );
 
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('actor_id');
-    localStorage.removeItem('actor_role');
-    localStorage.removeItem(USER_STORAGE_KEY);
+    session.clear();
     setUser(null);
+  }, []);
+
+  // El interceptor de Axios avisa cuando el token vencio y no se pudo renovar.
+  useEffect(() => {
+    const onExpired = () => setUser(null);
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, []);
+
+  // Al recargar la pagina se valida la sesion guardada contra GET /auth/me.
+  useEffect(() => {
+    if (!session.getToken()) return;
+    let active = true;
+    authService
+      .me()
+      .then((current) => {
+        if (!active) return;
+        session.saveUser(current);
+        setUser(current);
+      })
+      .catch((err) => {
+        // Un 401 ya fue tratado por el interceptor (refresco o cierre de sesion).
+        // 403/404: cuenta desactivada o inexistente (por ejemplo, base reiniciada).
+        // Un error de red no cierra la sesion: el backend puede estar reiniciando.
+        const status = isAxiosError(err) ? err.response?.status : undefined;
+        if (active && (status === 403 || status === 404)) {
+          session.clear();
+          setUser(null);
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const value = useMemo<AuthContextValue>(

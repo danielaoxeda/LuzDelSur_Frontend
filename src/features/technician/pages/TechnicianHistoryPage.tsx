@@ -11,11 +11,11 @@ import {
   StatusBadge,
   formatDateTime,
   formatFailureType,
-  formatLinkAction,
   formatShortId,
 } from '../../../shared/components/StatusBadge';
 import { useNotification } from '../../../shared/context/NotificationContext';
 import { extractApiErrorMessage } from '../../../shared/services/api';
+import { buildTimeline } from '../../../shared/utils/timeline';
 import { technicianService } from '../services/technician.service';
 import type {
   IncidentDetail,
@@ -107,6 +107,14 @@ export function TechnicianHistoryPage() {
     setAuditDetail(null);
     setDetailError(null);
   };
+
+  const auditTimeline = useMemo(
+    () =>
+      auditDetail
+        ? buildTimeline(auditDetail.history, auditDetail.statusHistory)
+        : [],
+    [auditDetail]
+  );
 
   const filteredIncidents = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -406,11 +414,11 @@ export function TechnicianHistoryPage() {
                     <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700">
                       <History className="h-4 w-4 text-slate-500" />
                       <span>
-                        Observaciones e Historial ({auditDetail.history.length})
+                        Observaciones e Historial ({auditTimeline.length})
                       </span>
                     </h3>
 
-                    {auditDetail.history.length === 0 ? (
+                    {auditTimeline.length === 0 ? (
                       <p className="rounded-lg border border-slate-200 bg-white p-4 text-center text-xs text-slate-500">
                         No se registran observaciones.
                       </p>
@@ -426,13 +434,13 @@ export function TechnicianHistoryPage() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200 bg-white">
-                            {auditDetail.history.map((entry) => (
-                              <tr key={entry.id} className="hover:bg-slate-50/70">
+                            {auditTimeline.map((entry) => (
+                              <tr key={entry.key} className="hover:bg-slate-50/70">
                                 <td className="whitespace-nowrap px-3.5 py-2.5 font-bold text-slate-800">
-                                  {formatLinkAction(entry.action)}
+                                  {entry.action}
                                 </td>
                                 <td className="whitespace-nowrap px-3.5 py-2.5 font-medium text-slate-700">
-                                  {entry.actorId}
+                                  {entry.actor}
                                 </td>
                                 <td className="px-3.5 py-2.5 text-slate-600">
                                   {entry.note || '—'}

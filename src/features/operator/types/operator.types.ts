@@ -5,6 +5,7 @@ import type {
   LinkAction,
   PriorityLabel,
   ReportView,
+  StatusEventView,
 } from '../../../shared/types/domain.types';
 
 /**
@@ -24,9 +25,14 @@ export interface IncidentSummary {
   lastReportedAt: string;
   confirmedAt: string | null;
   confirmedBy: string | null;
+  assignedTechnicianId?: string | null;
+  assignedAt?: string | null;
   closedAt: string | null;
   updatedAt: string;
   version: number;
+  /** Solo en el detalle: nombres legibles de los actores. */
+  confirmedByName?: string | null;
+  assignedTechnicianName?: string | null;
 }
 
 /**
@@ -39,6 +45,7 @@ export interface LinkHistoryView {
   toIncidentId: string | null;
   action: LinkAction;
   actorId: string;
+  actorName?: string | null;
   note: string | null;
   createdAt: string;
 }
@@ -51,6 +58,27 @@ export interface IncidentDetail {
   reports: ReportView[];
   history: LinkHistoryView[];
   alerts: string[];
+  statusHistory?: StatusEventView[];
+}
+
+/**
+ * Corresponde a OperatorDtos.AssignRequest
+ */
+export interface AssignRequest {
+  technicianId: string;
+  note?: string;
+}
+
+/**
+ * Corresponde a AuthDtos.TechnicianView (GET /api/v1/operator/technicians)
+ */
+export interface TechnicianOption {
+  id: string;
+  name: string;
+  username: string;
+  active: boolean;
+  openAssignments: number;
+  lastLoginAt: string | null;
 }
 
 /**

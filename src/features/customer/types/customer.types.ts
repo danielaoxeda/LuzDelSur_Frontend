@@ -47,6 +47,26 @@ export interface TrackingResponse {
   requiresReview: boolean;
   incidentUpdatedAt: string | null;
   clientMessage: string;
+  /** true si el caso esta RESUELTA o CERRADA y aun no tiene calificacion. */
+  canRate?: boolean;
+  feedback?: FeedbackView | null;
+}
+
+/**
+ * Corresponde a ReportDtos.FeedbackRequest
+ */
+export interface FeedbackRequest {
+  rating: number;
+  comment?: string;
+}
+
+/**
+ * Corresponde a ReportDtos.FeedbackView
+ */
+export interface FeedbackView {
+  rating: number;
+  comment: string | null;
+  createdAt: string;
 }
 
 /**

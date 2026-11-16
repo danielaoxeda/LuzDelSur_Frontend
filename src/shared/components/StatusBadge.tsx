@@ -127,6 +127,11 @@ export function formatLinkAction(action: LinkAction): string {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
+export function formatIncidentStatus(status: IncidentStatus): string {
+  return STATUS_STYLES[status]?.label ?? status;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
 export function formatShortId(uuid: string): string {
   if (!uuid) return '—';
   return `#INC-${uuid.slice(0, 8).toUpperCase()}`;

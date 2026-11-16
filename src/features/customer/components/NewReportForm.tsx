@@ -7,7 +7,6 @@ import { useNotification } from '../../../shared/context/NotificationContext';
 import { extractApiErrorMessage } from '../../../shared/services/api';
 import type { FailureType } from '../../../shared/types/domain.types';
 import { customerService } from '../services/customer.service';
-import { addMyReport } from '../services/myReports.registry';
 import type { CreateReportRequest } from '../types/customer.types';
 
 const FAILURE_TYPE_OPTIONS: FailureType[] = [
@@ -137,7 +136,6 @@ export function NewReportForm() {
     setIsSubmitting(true);
     try {
       const response = await customerService.createReport(request);
-      addMyReport(response.report.id);
       success('Incidencia registrada', response.clientMessage);
       navigate(`/cliente/reportes/${response.report.id}`, { replace: true });
     } catch (err) {

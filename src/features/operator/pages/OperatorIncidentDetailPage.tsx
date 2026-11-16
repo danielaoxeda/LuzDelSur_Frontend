@@ -12,6 +12,7 @@ import {
   Scissors,
   SearchX,
   ShieldAlert,
+  UserCheck,
   XCircle,
 } from 'lucide-react';
 import { ActionModal } from '../../../shared/components/ActionModal';
@@ -19,16 +20,17 @@ import {
   StatusBadge,
   formatDateTime,
   formatFailureType,
-  formatLinkAction,
   formatShortId,
 } from '../../../shared/components/StatusBadge';
 import { useNotification } from '../../../shared/context/NotificationContext';
 import { extractApiErrorMessage } from '../../../shared/services/api';
+import { buildTimeline } from '../../../shared/utils/timeline';
 import type {
   IncidentStatus,
   ReportView,
 } from '../../../shared/types/domain.types';
 import { AlertsPanel } from '../components/AlertsPanel';
+import { AssignTechnicianModal } from '../components/AssignTechnicianModal';
 import { ConfirmGroupingModal } from '../components/ConfirmGroupingModal';
 import { ReassignReportModal } from '../components/ReassignReportModal';
 import { SeparateReportModal } from '../components/SeparateReportModal';
@@ -56,6 +58,7 @@ export function OperatorIncidentDetailPage() {
   const [separateReport, setSeparateReport] = useState<ReportView | null>(null);
   const [reassignReport, setReassignReport] = useState<ReportView | null>(null);
   const [closeOpen, setCloseOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [closeNote, setCloseNote] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -167,6 +170,27 @@ export function OperatorIncidentDetailPage() {
     }
   };
 
+  const handleAssign = async (technicianId: string, note?: string) => {
+    if (!incidentId || actionBusy) return;
+    setActionBusy(true);
+    try {
+      const updated = await operatorService.assignTechnician(incidentId, {
+        technicianId,
+        ...(note ? { note } : {}),
+      });
+      setDetail(updated);
+      setAssignOpen(false);
+      success(
+        'Técnico asignado',
+        `El caso ${formatShortId(incidentId)} ya figura en las tareas del técnico.`
+      );
+    } catch (err) {
+      handleActionError(err, 'No se pudo asignar el técnico');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
   const handleCloseCase = async () => {
     if (!incidentId || actionBusy) return;
     setActionBusy(true);
@@ -249,6 +273,11 @@ export function OperatorIncidentDetailPage() {
   const incident = detail.incident;
   const isOpen = OPEN_STATUSES.has(incident.status);
   const canConfirm = incident.status === 'SUGERIDA';
+  const canAssign =
+    incident.status === 'CONFIRMADA' ||
+    incident.status === 'EN_ATENCION' ||
+    incident.status === 'REABIERTA';
+  const timeline = buildTimeline(detail.history, detail.statusHistory);
   const canClose =
     incident.status === 'RESUELTA' || incident.status === 'REABIERTA';
 
@@ -317,8 +346,20 @@ export function OperatorIncidentDetailPage() {
             </div>
           )}
 
-          {(canConfirm || canClose) && (
+          {(canConfirm || canClose || canAssign) && (
             <div className="mt-4 flex flex-wrap gap-2">
+              {canAssign && (
+                <button
+                  type="button"
+                  onClick={() => setAssignOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B132B] px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-slate-900"
+                >
+                  <UserCheck className="h-4 w-4" />
+                  <span>
+                    {incident.assignedTechnicianId ? 'Reasignar técnico' : 'Asignar técnico'}
+                  </span>
+                </button>
+              )}
               {canConfirm && (
                 <button
                   type="button"
@@ -384,7 +425,15 @@ export function OperatorIncidentDetailPage() {
               Confirmado por
             </dt>
             <dd className="mt-0.5 font-semibold text-slate-900">
-              {incident.confirmedBy ?? '—'}
+              {incident.confirmedByName ?? incident.confirmedBy ?? '—'}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-bold uppercase tracking-wider text-slate-500">
+              Técnico asignado
+            </dt>
+            <dd className="mt-0.5 font-semibold text-slate-900">
+              {incident.assignedTechnicianName ?? incident.assignedTechnicianId ?? 'Sin asignar'}
             </dd>
           </div>
           <div>
@@ -606,49 +655,44 @@ export function OperatorIncidentDetailPage() {
         <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3.5 sm:px-5">
           <History className="h-4 w-4 text-blue-600" />
           <h2 className="text-sm font-extrabold text-slate-900">
-            Historial de vínculos
+            Historial del caso
           </h2>
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-            {detail.history.length}
+            {timeline.length}
           </span>
         </div>
 
-        {detail.history.length === 0 ? (
+        {timeline.length === 0 ? (
           <p className="px-4 py-8 text-center text-xs text-slate-500">
             Sin eventos de historial registrados.
           </p>
         ) : (
           <ul className="divide-y divide-slate-200">
-            {detail.history.map((entry) => (
-              <li key={entry.id} className="px-4 py-3.5 sm:px-5">
+            {timeline.map((entry) => (
+              <li key={entry.key} className="px-4 py-3.5 sm:px-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-700">
-                    {formatLinkAction(entry.action)}
+                  <span
+                    className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                      entry.kind === 'ESTADO'
+                        ? 'border-blue-200 bg-blue-50 text-blue-800'
+                        : 'border-slate-200 bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    {entry.action}
                   </span>
                   <span className="text-[11px] text-slate-500">
                     {formatDateTime(entry.createdAt)}
                   </span>
                 </div>
 
-                <p className="mt-1.5 text-[11px] text-slate-600">
-                  Reporte {formatShortId(entry.reportId)} ·{' '}
-                  {entry.fromIncidentId
-                    ? formatShortId(entry.fromIncidentId)
-                    : 'sin caso'}{' '}
-                  →{' '}
-                  {entry.toIncidentId
-                    ? formatShortId(entry.toIncidentId)
-                    : 'sin caso'}
-                </p>
-
                 {entry.note && (
-                  <p className="mt-1 text-xs leading-relaxed text-slate-800">
+                  <p className="mt-1.5 text-xs leading-relaxed text-slate-800">
                     {entry.note}
                   </p>
                 )}
 
                 <p className="mt-1 text-[10px] text-slate-400">
-                  Actor: {entry.actorId}
+                  Actor: {entry.actor}
                 </p>
               </li>
             ))}
@@ -695,6 +739,17 @@ export function OperatorIncidentDetailPage() {
           onConfirm={(targetIncidentId, note) =>
             void handleReassign(targetIncidentId, note)
           }
+        />
+      )}
+
+      {assignOpen && (
+        <AssignTechnicianModal
+          incident={detail.incident}
+          isSubmitting={actionBusy}
+          onCancel={() => {
+            if (!actionBusy) setAssignOpen(false);
+          }}
+          onConfirm={(technicianId, note) => void handleAssign(technicianId, note)}
         />
       )}
 

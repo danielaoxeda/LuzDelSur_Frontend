@@ -91,10 +91,13 @@ export function OperatorInboxPage() {
     return () => window.clearInterval(timer);
   }, []);
 
+  // Si los filtros no cambian, React no vuelve a ejecutar el efecto y el
+  // spinner quedaria girando; reloadKey fuerza siempre una nueva consulta.
   const handleApply = () => {
     setLoading(true);
     setApplied(draft);
     setPage(0);
+    setReloadKey((value) => value + 1);
   };
 
   const handleClear = () => {
@@ -102,6 +105,7 @@ export function OperatorInboxPage() {
     setDraft(EMPTY_INBOX_FILTERS);
     setApplied(EMPTY_INBOX_FILTERS);
     setPage(0);
+    setReloadKey((value) => value + 1);
   };
 
   const incidents = data?.content ?? [];

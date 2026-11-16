@@ -56,6 +56,22 @@ export interface ReportView {
 }
 
 /**
+ * Corresponde a OperatorDtos.StatusEventView: confirmaciones, cambios de
+ * estado y asignaciones del caso, con su nota.
+ */
+export interface StatusEventView {
+  id: number;
+  eventType: 'CAMBIO_ESTADO' | 'ASIGNACION';
+  fromStatus: IncidentStatus | null;
+  toStatus: IncidentStatus;
+  actorId: string | null;
+  actorName?: string | null;
+  actorRole: string | null;
+  note: string | null;
+  createdAt: string;
+}
+
+/**
  * Corresponde a PageResponse<T>
  */
 export interface PageResponse<T> {

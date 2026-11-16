@@ -1,6 +1,7 @@
 import { api } from '../../../shared/services/api';
 import type { PageResponse } from '../../../shared/types/domain.types';
 import type {
+  AssignRequest,
   ConfirmRequest,
   IncidentDetail,
   IncidentQuery,
@@ -9,13 +10,14 @@ import type {
   SeparateRequest,
   SeparationResult,
   StatusRequest,
+  TechnicianOption,
 } from '../types/operator.types';
 
 /**
  * Servicio real del operador. Sin mocks ni fallback.
  *
- * Todos los endpoints exigen X-Actor-Role: OPERADOR, cabecera que ya envia
- * el interceptor de Axios.
+ * Todos los endpoints exigen sesion con rol OPERADOR (JWT que adjunta el
+ * interceptor de Axios).
  */
 export const operatorService = {
   /**
@@ -77,6 +79,30 @@ export const operatorService = {
       `/v1/operator/incidents/${incidentId}/status`,
       request
     );
+    return data;
+  },
+
+  /**
+   * OperatorController: POST /api/v1/operator/incidents/{incidentId}/assign
+   */
+  async assignTechnician(
+    incidentId: string,
+    request: AssignRequest
+  ): Promise<IncidentDetail> {
+    const { data } = await api.post<IncidentDetail>(
+      `/v1/operator/incidents/${incidentId}/assign`,
+      request
+    );
+    return data;
+  },
+
+  /**
+   * StaffController: GET /api/v1/operator/technicians
+   */
+  async getTechnicians(onlyActive = true): Promise<TechnicianOption[]> {
+    const { data } = await api.get<TechnicianOption[]>('/v1/operator/technicians', {
+      params: { onlyActive },
+    });
     return data;
   },
 
