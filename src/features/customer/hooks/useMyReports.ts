@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { extractApiErrorMessage } from '../../../shared/services/api';
 import { customerService } from '../services/customer.service';
-import { listMyReports, type MyReportEntry } from '../services/myReports.registry';
 import type { TrackingResponse } from '../types/customer.types';
+
+export interface MyReportEntry {
+  id: string;
+  registeredAt: string;
+}
 
 export interface TrackedMyReport {
   entry: MyReportEntry;
@@ -11,12 +15,14 @@ export interface TrackedMyReport {
 }
 
 /**
- * Hidrata el indice local de reportes con el endpoint real de seguimiento.
- * Un fallo individual no invalida el resto de la lista.
+ * Reportes del cliente autenticado: GET /api/v1/reports/mine.
+ * El backend filtra por el usuario del JWT, por lo que la lista es la misma
+ * en cualquier navegador o dispositivo.
  */
-export function useMyReports() {
+export function useMyReports(size = 50) {
   const [items, setItems] = useState<TrackedMyReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   const reload = useCallback(() => {
@@ -26,27 +32,27 @@ export function useMyReports() {
 
   useEffect(() => {
     let active = true;
-    const entries = listMyReports();
 
-    Promise.allSettled(
-      entries.map((entry) => customerService.getTracking(entry.id))
-    )
-      .then((settled) => {
+    customerService
+      .getMyReports(0, size)
+      .then((page) => {
         if (!active) return;
+        setError(null);
         setItems(
-          entries.map((entry, index) => {
-            const result = settled[index];
-            if (result.status === 'fulfilled') {
-              return { entry, tracking: result.value };
-            }
-            return {
-              entry,
-              error: extractApiErrorMessage(
-                result.reason,
-                'No se pudo actualizar este reporte.'
-              ),
-            };
-          })
+          page.content.map((tracking) => ({
+            entry: {
+              id: tracking.report.id,
+              registeredAt: tracking.report.reportedAt,
+            },
+            tracking,
+          }))
+        );
+      })
+      .catch((err) => {
+        if (!active) return;
+        setItems([]);
+        setError(
+          extractApiErrorMessage(err, 'No se pudieron obtener sus reportes.')
         );
       })
       .finally(() => {
@@ -56,7 +62,7 @@ export function useMyReports() {
     return () => {
       active = false;
     };
-  }, [reloadKey]);
+  }, [reloadKey, size]);
 
-  return { items, loading, reload };
+  return { items, loading, error, reload };
 }

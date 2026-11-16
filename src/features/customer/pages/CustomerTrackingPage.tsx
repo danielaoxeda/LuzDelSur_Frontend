@@ -11,6 +11,7 @@ import { ActionModal } from '../../../shared/components/ActionModal';
 import { formatShortId } from '../../../shared/components/StatusBadge';
 import { useNotification } from '../../../shared/context/NotificationContext';
 import { extractApiErrorMessage } from '../../../shared/services/api';
+import { RateServiceCard } from '../components/RateServiceCard';
 import { ReportStatusCard } from '../components/ReportStatusCard';
 import { customerService } from '../services/customer.service';
 import type { TrackingResponse } from '../types/customer.types';
@@ -169,6 +170,10 @@ export function CustomerTrackingPage() {
               <span>La falla persiste</span>
             </button>
           </div>
+
+          {reportId && (
+            <RateServiceCard reportId={reportId} tracking={tracking} onRated={setTracking} />
+          )}
         </>
       ) : null}
 

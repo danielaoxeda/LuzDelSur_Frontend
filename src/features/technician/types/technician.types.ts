@@ -1,3 +1,5 @@
+import type { StatusEventView } from '../../../shared/types/domain.types';
+
 export type IncidentStatus =
   | 'SUGERIDA'
   | 'CONFIRMADA'
@@ -32,6 +34,32 @@ export type LinkAction =
   | 'REASIGNADO'
   | 'REABIERTO';
 
+export type { StatusEventView };
+
+/**
+ * Corresponde a TechnicianDtos.TechnicianIncidentSummary
+ * (GET /api/v1/technician/incidents y /incidents/history)
+ */
+export interface TechnicianIncidentSummary {
+  id: string;
+  sector: string;
+  failureType: FailureType;
+  status: IncidentStatus;
+  certainty: Certainty;
+  requiresReview: boolean;
+  priorityLabel: PriorityLabel;
+  priorityScore: number;
+  affectedReports: number;
+  firstReportedAt: string;
+  lastReportedAt: string;
+  assignedTechnicianId?: string | null;
+  assignedAt?: string | null;
+  estimatedScope: string;
+  statusUpdatedAt?: string | null;
+  closedAt?: string | null;
+  updatedAt?: string | null;
+}
+
 /**
  * Corresponde a TechnicianDtos.TechnicianReportView
  */
@@ -44,6 +72,8 @@ export interface TechnicianReportView {
   reportedAt: string;
   linkStatus: ReportLinkStatus;
   certainty: Certainty;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 /**
@@ -61,6 +91,14 @@ export interface TechnicianIncidentView {
   affectedReports: number;
   firstReportedAt: string;
   lastReportedAt: string;
+  confirmedAt?: string | null;
+  confirmedBy?: string | null;
+  statusUpdatedAt?: string | null;
+  statusUpdatedBy?: string | null;
+  assignedTechnicianId?: string | null;
+  assignedAt?: string | null;
+  closedAt?: string | null;
+  updatedAt?: string | null;
   estimatedScope: string;
   reports: TechnicianReportView[];
   warnings: string[];
@@ -83,6 +121,8 @@ export interface IncidentSummary {
   lastReportedAt: string;
   confirmedAt: string | null;
   confirmedBy: string | null;
+  assignedTechnicianId?: string | null;
+  assignedAt?: string | null;
   closedAt: string | null;
   updatedAt: string;
   version: number;
@@ -116,6 +156,7 @@ export interface LinkHistoryView {
   toIncidentId: string | null;
   action: LinkAction;
   actorId: string;
+  actorName?: string | null;
   note: string | null;
   createdAt: string;
 }
@@ -128,6 +169,7 @@ export interface IncidentDetail {
   reports: ReportView[];
   history: LinkHistoryView[];
   alerts: string[];
+  statusHistory?: StatusEventView[];
 }
 
 /**

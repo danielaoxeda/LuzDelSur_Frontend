@@ -4,13 +4,12 @@ import { ArrowRight, Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import { getHomeRouteForRole, useAuth } from '../../../shared/context/AuthContext';
 import { useNotification } from '../../../shared/context/NotificationContext';
 import { extractApiErrorMessage } from '../../../shared/services/api';
-import type { ActorRole } from '../types/auth.types';
 
-const ROLE_OPTIONS: { value: ActorRole; label: string }[] = [
-  { value: 'CLIENTE', label: 'Cliente' },
-  { value: 'OPERADOR', label: 'Operador' },
-  { value: 'TECNICO', label: 'Técnico' },
-];
+/**
+ * El registro publico crea cuentas de CLIENTE. Las cuentas de operador y
+ * tecnico las crea un operador (POST /api/v1/operator/technicians) o la
+ * semilla de demo del backend.
+ */
 
 export function RegisterForm() {
   const { register } = useAuth();
@@ -19,7 +18,6 @@ export function RegisterForm() {
 
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
-  const [role, setRole] = useState<ActorRole>('TECNICO');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -50,7 +48,7 @@ export function RegisterForm() {
       const authUser = await register({
         name: cleanName,
         username: cleanUsername,
-        role,
+        role: 'CLIENTE',
         password,
       });
       success(
@@ -69,29 +67,9 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <div>
-        <span className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-600">
-          Rol de acceso
-        </span>
-        <div className="grid grid-cols-3 gap-2">
-          {ROLE_OPTIONS.map((option) => {
-            const isSelected = role === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setRole(option.value)}
-                className={`rounded-lg border px-3 py-2.5 text-xs font-bold transition-colors ${
-                  isSelected
-                    ? 'border-[#0B132B] bg-[#0B132B] text-white'
-                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
+      <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-3.5 py-2.5 text-xs text-blue-900">
+        Se creará una cuenta de <strong>cliente</strong>. Las cuentas de operador y
+        técnico las habilita un operador de Luz del Sur.
       </div>
 
       <div>

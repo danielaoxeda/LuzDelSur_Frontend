@@ -162,17 +162,24 @@ npm run build
 
 El frontend utiliza **Axios** para la comunicación con el backend (`luzdelsur-backend`), que expone una API REST en Spring Boot.
 
-La autenticación usa **JWT**, enviado en el encabezado `Authorization: Bearer <token>`. [Ajustar si cambia el esquema.]
+La autenticación usa **JWT**: el interceptor de Axios envía `Authorization: Bearer <token>`. Ante un `401` intenta una vez `POST /v1/auth/refresh` y, si falla, cierra la sesión y vuelve al login. Al recargar la página la sesión se valida con `GET /v1/auth/me`.
 
-Endpoints principales consumidos: [completar con el contrato final de la API]
+Cuentas de demostración (las crea el backend al arrancar): `operador@luzdelsur.com.pe`, `tecnico@luzdelsur.com.pe`, `tecnico2@luzdelsur.com.pe` y `cliente@luzdelsur.com.pe`, con la contraseña `APP_DEMO_PASSWORD` del backend (`12345678` en local). El registro público crea solo cuentas de cliente.
 
-| Método | Endpoint                         | Descripción                        |
-| ------ | -------------------------------- | ---------------------------------- |
-| POST   | `/auth/login`                    | Inicio de sesión                   |
-| POST   | `/reportes`                      | Registrar un reporte               |
-| GET    | `/incidencias`                   | Listar incidencias                 |
-| PATCH  | `/incidencias/{id}/confirmar`    | Confirmar agrupación sugerida      |
-| PATCH  | `/reportes/{id}/reasignar`       | Separar o reasignar un reporte     |
+Endpoints consumidos (base `VITE_API_URL`, que ya incluye `/api`):
+
+| Vista | Método | Endpoint |
+| ----- | ------ | -------- |
+| Login / registro | POST | `/v1/auth/login`, `/v1/auth/register`, `/v1/auth/refresh` · GET `/v1/auth/me` |
+| Cliente | POST | `/v1/reports` (alta) |
+| Cliente | GET | `/v1/reports/mine` (mis reportes), `/v1/reports/{id}` (seguimiento) |
+| Cliente | POST | `/v1/reports/{id}/persistence` (la falla persiste), `/v1/reports/{id}/feedback` (calificación) |
+| Operador | GET | `/v1/operator/incidents`, `/v1/operator/incidents/{id}`, `/v1/operator/technicians` |
+| Operador | POST | `/v1/operator/incidents/{id}/confirm`, `/status`, `/assign` · `/v1/operator/reports/{id}/separate`, `/reassign` |
+| Técnico | GET | `/v1/technician/incidents`, `/v1/technician/incidents/{id}`, `/history`, `/{id}/timeline` |
+| Técnico | POST | `/v1/technician/incidents/{id}/status` |
+
+El contrato completo está en `docs/api.md` del repositorio del backend. La API también expone `/v1/operator/metrics` y `/v1/operator/audit-events`, que aún no tienen pantalla.
 
 ## ☁️ Despliegue
 
