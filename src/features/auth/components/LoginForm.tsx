@@ -4,49 +4,36 @@ import { ArrowRight, Eye, EyeOff, Lock, User } from 'lucide-react';
 import { getHomeRouteForRole, useAuth } from '../../../shared/context/AuthContext';
 import { useNotification } from '../../../shared/context/NotificationContext';
 import { extractApiErrorMessage } from '../../../shared/services/api';
-import type { ActorRole } from '../types/auth.types';
-
-const ROLE_OPTIONS: { value: ActorRole; label: string; sampleUser: string }[] = [
-  { value: 'TECNICO', label: 'Técnico', sampleUser: 'tecnico@luzdelsur.com.pe' },
-  { value: 'OPERADOR', label: 'Operador', sampleUser: 'operador@luzdelsur.com.pe' },
-  { value: 'CLIENTE', label: 'Cliente', sampleUser: 'cliente@luzdelsur.com.pe' },
-];
 
 export function LoginForm() {
   const { login } = useAuth();
   const { success, error: notifyError } = useNotification();
   const navigate = useNavigate();
 
-  const [role, setRole] = useState<ActorRole>('TECNICO');
-  const [username, setUsername] = useState('tecnico@luzdelsur.com.pe');
-  const [password, setPassword] = useState('12345678');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleRoleChange = (nextRole: ActorRole) => {
-    const sampleUsers = ROLE_OPTIONS.map((opt) => opt.sampleUser);
-    const targetOption = ROLE_OPTIONS.find((opt) => opt.value === nextRole);
-    setRole(nextRole);
-    if (
-      targetOption &&
-      (username.trim() === '' || sampleUsers.includes(username.trim()))
-    ) {
-      setUsername(targetOption.sampleUser);
-    }
-    setValidationError(null);
-  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const cleanUser = username.trim();
 
     if (!cleanUser) {
-      setValidationError('Ingrese su usuario o correo.');
+      setValidationError('Ingrese su usuario o correo electrónico.');
       return;
     }
-    if (!password.trim()) {
+    if (cleanUser.length > 120) {
+      setValidationError('El usuario o correo no puede superar los 120 caracteres.');
+      return;
+    }
+    if (!password) {
       setValidationError('Ingrese su contraseña.');
+      return;
+    }
+    if (password.length > 72) {
+      setValidationError('La contraseña no puede superar los 72 caracteres.');
       return;
     }
 
@@ -57,7 +44,6 @@ export function LoginForm() {
       const authUser = await login({
         username: cleanUser,
         password,
-        role,
       });
       success('Bienvenido', `Sesión iniciada como ${authUser.name}.`);
       navigate(getHomeRouteForRole(authUser.role), { replace: true });
@@ -73,42 +59,19 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       <div>
-        <span className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-600">
-          Rol de acceso
-        </span>
-        <div className="grid grid-cols-3 gap-2">
-          {ROLE_OPTIONS.map((option) => {
-            const isSelected = role === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleRoleChange(option.value)}
-                className={`rounded-lg border px-3 py-2.5 text-xs font-bold transition-colors ${
-                  isSelected
-                    ? 'border-[#0B132B] bg-[#0B132B] text-white'
-                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div>
         <label
           htmlFor="login-username"
           className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-600"
         >
-          Usuario o correo
+          Usuario o correo electrónico
         </label>
         <div className="relative">
           <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             id="login-username"
             type="text"
+            autoComplete="username"
+            maxLength={120}
             value={username}
             onChange={(e) => {
               setUsername(e.target.value);
@@ -133,6 +96,8 @@ export function LoginForm() {
           <input
             id="login-password"
             type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            maxLength={72}
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);

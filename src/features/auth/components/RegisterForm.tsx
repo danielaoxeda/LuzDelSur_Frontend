@@ -5,12 +5,6 @@ import { getHomeRouteForRole, useAuth } from '../../../shared/context/AuthContex
 import { useNotification } from '../../../shared/context/NotificationContext';
 import { extractApiErrorMessage } from '../../../shared/services/api';
 
-/**
- * El registro publico crea cuentas de CLIENTE. Las cuentas de operador y
- * tecnico las crea un operador (POST /api/v1/operator/technicians) o la
- * semilla de demo del backend.
- */
-
 export function RegisterForm() {
   const { register } = useAuth();
   const { success, error: notifyError } = useNotification();
@@ -32,12 +26,24 @@ export function RegisterForm() {
       setValidationError('Ingrese sus nombres y apellidos.');
       return;
     }
+    if (cleanName.length > 120) {
+      setValidationError('El nombre no puede superar los 120 caracteres.');
+      return;
+    }
     if (!cleanUsername) {
-      setValidationError('Ingrese un usuario o correo.');
+      setValidationError('Ingrese un usuario o correo electrónico.');
+      return;
+    }
+    if (cleanUsername.length > 120) {
+      setValidationError('El usuario o correo no puede superar los 120 caracteres.');
       return;
     }
     if (password.length < 6) {
       setValidationError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (password.length > 72) {
+      setValidationError('La contraseña no puede superar los 72 caracteres.');
       return;
     }
 
@@ -48,13 +54,9 @@ export function RegisterForm() {
       const authUser = await register({
         name: cleanName,
         username: cleanUsername,
-        role: 'CLIENTE',
         password,
       });
-      success(
-        'Cuenta creada',
-        `Bienvenido, ${authUser.name}.`
-      );
+      success('Cuenta creada', `Bienvenido, ${authUser.name}.`);
       navigate(getHomeRouteForRole(authUser.role), { replace: true });
     } catch (err) {
       const msg = extractApiErrorMessage(err, 'No se pudo completar el registro.');
@@ -67,11 +69,6 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-3.5 py-2.5 text-xs text-blue-900">
-        Se creará una cuenta de <strong>cliente</strong>. Las cuentas de operador y
-        técnico las habilita un operador de Luz del Sur.
-      </div>
-
       <div>
         <label
           htmlFor="register-name"
@@ -84,6 +81,8 @@ export function RegisterForm() {
           <input
             id="register-name"
             type="text"
+            autoComplete="name"
+            maxLength={120}
             value={name}
             onChange={(e) => {
               setName(e.target.value);
@@ -107,7 +106,9 @@ export function RegisterForm() {
           <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             id="register-username"
-            type="email"
+            type="text"
+            autoComplete="username"
+            maxLength={120}
             value={username}
             onChange={(e) => {
               setUsername(e.target.value);
@@ -132,6 +133,9 @@ export function RegisterForm() {
           <input
             id="register-password"
             type={showPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            minLength={6}
+            maxLength={72}
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
