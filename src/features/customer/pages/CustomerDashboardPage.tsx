@@ -30,18 +30,18 @@ function countByStatus(
 }
 
 export function CustomerDashboardPage() {
-  const { items, loading, reload } = useMyReports();
+  const { items, loading, pageData, reload } = useMyReports();
 
   const stats = useMemo(() => {
     const statuses = items.map((item) => item.tracking?.incidentStatus);
     return {
-      total: items.length,
+      total: pageData?.totalElements ?? items.length,
       revision: countByStatus(statuses, ['SUGERIDA']),
       enCurso: countByStatus(statuses, ['CONFIRMADA', 'EN_ATENCION']),
       cerradas: countByStatus(statuses, ['RESUELTA', 'CERRADA']),
       noDisponibles: items.filter((item) => !item.tracking).length,
     };
-  }, [items]);
+  }, [items, pageData]);
 
   const recent = items.slice(0, 5);
 
@@ -54,7 +54,7 @@ export function CustomerDashboardPage() {
               Panel del Cliente
             </h1>
             <p className="text-xs text-slate-500">
-              Seguimiento de las incidencias registradas desde este navegador.
+              Seguimiento de las incidencias registradas con tu cuenta.
             </p>
           </div>
 
@@ -162,7 +162,7 @@ export function CustomerDashboardPage() {
         ) : recent.length === 0 ? (
           <div className="px-4 py-12 text-center">
             <p className="text-sm font-semibold text-slate-700">
-              Aún no ha registrado incidencias desde este navegador.
+              Aún no ha registrado incidencias con esta cuenta.
             </p>
             <p className="mt-1 text-xs text-slate-500">
               Puede registrar una nueva incidencia o consultar un reporte

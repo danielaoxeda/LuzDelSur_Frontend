@@ -3,8 +3,8 @@ import { PortalLayout, type PortalNavItem } from './PortalLayout';
 
 const CUSTOMER_NAV: PortalNavItem[] = [
   { to: '/cliente/panel', label: 'Panel Principal', icon: LayoutDashboard },
-  { to: '/cliente/nueva', label: 'Registrar Incidencia', icon: FilePlus2 },
-  { to: '/cliente/reportes', label: 'Mis Reportes', icon: FolderOpen },
+  { to: '/cliente/nueva', label: 'Reportar Incidencia', icon: FilePlus2 },
+  { to: '/cliente/reportes', label: 'Historial de Reportes', icon: FolderOpen },
 ];
 
 export function CustomerLayout() {
