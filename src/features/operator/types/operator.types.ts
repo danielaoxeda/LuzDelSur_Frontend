@@ -4,6 +4,7 @@ import type {
   IncidentStatus,
   LinkAction,
   PriorityLabel,
+  ReportLinkStatus,
   ReportView,
   StatusEventView,
 } from '../../../shared/types/domain.types';
@@ -130,6 +131,68 @@ export interface IncidentQuery {
   failureType?: FailureType;
   sector?: string;
   onlyOpen?: boolean;
+  page?: number;
+  size?: number;
+}
+
+/**
+ * Corresponde a OperatorDtos.SectorCount
+ */
+export interface SectorCount {
+  sector: string;
+  openIncidents: number;
+  reports: number;
+}
+
+/**
+ * Corresponde a OperatorDtos.MetricsView (GET /api/v1/operator/metrics).
+ * Los mapas usan el nombre del enum como clave (IncidentStatus, PriorityLabel
+ * y FailureType).
+ */
+export interface MetricsView {
+  generatedAt: string;
+  openIncidents: number;
+  pendingReview: number;
+  lowCertaintyOpen: number;
+  unassignedConfirmed: number;
+  reportsLast24h: number;
+  incidentsLast24h: number;
+  avgMinutesToConfirm: number | null;
+  avgMinutesToResolve: number | null;
+  byStatus: Partial<Record<IncidentStatus, number>>;
+  openByPriority: Partial<Record<PriorityLabel, number>>;
+  openByFailureType: Partial<Record<FailureType, number>>;
+  topSectors: SectorCount[];
+}
+
+/**
+ * Corresponde a AuthDtos.StaffCreateRequest (POST /api/v1/operator/technicians)
+ */
+export interface TechnicianCreateRequest {
+  name: string;
+  username: string;
+  password: string;
+}
+
+/**
+ * Corresponde a AuthDtos.StaffUpdateRequest
+ * (PATCH /api/v1/operator/technicians/{technicianId}). El backend solo
+ * permite cambiar el estado activo de la cuenta.
+ */
+export interface TechnicianUpdateRequest {
+  active: boolean;
+}
+
+/**
+ * Parametros aceptados por GET /api/v1/operator/reports
+ */
+export interface ReportQuery {
+  incidentId?: string;
+  linkStatus?: ReportLinkStatus;
+  failureType?: FailureType;
+  sector?: string;
+  from?: string;
+  to?: string;
   page?: number;
   size?: number;
 }

@@ -387,7 +387,7 @@ export function OperatorIncidentDetailPage() {
           )}
         </div>
 
-        <dl className="grid gap-4 px-4 py-4 text-xs sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+        <dl className="grid gap-4 px-4 py-4 text-xs sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
           <div>
             <dt className="font-bold uppercase tracking-wider text-slate-500">
               Reportes vinculados
@@ -414,50 +414,20 @@ export function OperatorIncidentDetailPage() {
           </div>
           <div>
             <dt className="font-bold uppercase tracking-wider text-slate-500">
+              Técnico asignado
+            </dt>
+            <dd className="mt-0.5 font-semibold text-slate-900">
+              {incident.assignedTechnicianName ??
+                incident.assignedTechnicianId ??
+                'Sin asignar'}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-bold uppercase tracking-wider text-slate-500">
               Actualizado
             </dt>
             <dd className="mt-0.5 font-semibold text-slate-900">
               {formatDateTime(incident.updatedAt)}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-bold uppercase tracking-wider text-slate-500">
-              Confirmado por
-            </dt>
-            <dd className="mt-0.5 font-semibold text-slate-900">
-              {incident.confirmedByName ?? incident.confirmedBy ?? '—'}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-bold uppercase tracking-wider text-slate-500">
-              Técnico asignado
-            </dt>
-            <dd className="mt-0.5 font-semibold text-slate-900">
-              {incident.assignedTechnicianName ?? incident.assignedTechnicianId ?? 'Sin asignar'}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-bold uppercase tracking-wider text-slate-500">
-              Fecha de confirmación
-            </dt>
-            <dd className="mt-0.5 font-semibold text-slate-900">
-              {formatDateTime(incident.confirmedAt)}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-bold uppercase tracking-wider text-slate-500">
-              Cerrado
-            </dt>
-            <dd className="mt-0.5 font-semibold text-slate-900">
-              {formatDateTime(incident.closedAt)}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-bold uppercase tracking-wider text-slate-500">
-              Versión
-            </dt>
-            <dd className="mt-0.5 font-semibold text-slate-900">
-              {incident.version}
             </dd>
           </div>
         </dl>

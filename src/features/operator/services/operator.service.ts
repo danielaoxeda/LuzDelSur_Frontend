@@ -1,16 +1,23 @@
 import { api } from '../../../shared/services/api';
-import type { PageResponse } from '../../../shared/types/domain.types';
+import type {
+  PageResponse,
+  ReportView,
+} from '../../../shared/types/domain.types';
 import type {
   AssignRequest,
   ConfirmRequest,
   IncidentDetail,
   IncidentQuery,
   IncidentSummary,
+  MetricsView,
   ReassignRequest,
+  ReportQuery,
   SeparateRequest,
   SeparationResult,
   StatusRequest,
+  TechnicianCreateRequest,
   TechnicianOption,
+  TechnicianUpdateRequest,
 } from '../types/operator.types';
 
 /**
@@ -103,6 +110,68 @@ export const operatorService = {
     const { data } = await api.get<TechnicianOption[]>('/v1/operator/technicians', {
       params: { onlyActive },
     });
+    return data;
+  },
+
+  /**
+   * StaffController: POST /api/v1/operator/technicians
+   * Crea una cuenta con rol TECNICO.
+   */
+  async createTechnician(
+    request: TechnicianCreateRequest
+  ): Promise<TechnicianOption> {
+    const { data } = await api.post<TechnicianOption>(
+      '/v1/operator/technicians',
+      request
+    );
+    return data;
+  },
+
+  /**
+   * StaffController: PATCH /api/v1/operator/technicians/{technicianId}
+   * El backend solo admite el campo `active`; no existe endpoint de borrado.
+   */
+  async updateTechnician(
+    technicianId: string,
+    request: TechnicianUpdateRequest
+  ): Promise<TechnicianOption> {
+    const { data } = await api.patch<TechnicianOption>(
+      `/v1/operator/technicians/${technicianId}`,
+      request
+    );
+    return data;
+  },
+
+  /**
+   * OperatorController: GET /api/v1/operator/metrics
+   */
+  async getMetrics(): Promise<MetricsView> {
+    const { data } = await api.get<MetricsView>('/v1/operator/metrics');
+    return data;
+  },
+
+  /**
+   * OperatorController: GET /api/v1/operator/reports
+   * Historial individual de reportes con filtros del backend.
+   */
+  async getReports(
+    query: ReportQuery = {}
+  ): Promise<PageResponse<ReportView>> {
+    const { data } = await api.get<PageResponse<ReportView>>(
+      '/v1/operator/reports',
+      {
+        params: {
+          incidentId: query.incidentId?.trim() || undefined,
+          linkStatus: query.linkStatus,
+          failureType: query.failureType,
+          sector: query.sector?.trim() || undefined,
+          from: query.from,
+          to: query.to,
+          page: query.page ?? 0,
+          size: query.size ?? 20,
+        },
+      }
+    );
     return data;
   },
 

@@ -85,7 +85,7 @@ export function TechnicianLayout() {
               className={navLinkClass}
             >
               <History className="h-4 w-4 shrink-0" />
-              <span>Historial de Cumplidas</span>
+              <span>Historial de Tareas</span>
             </NavLink>
           </nav>
         </div>

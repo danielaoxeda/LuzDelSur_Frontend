@@ -42,11 +42,13 @@ function toIncidentSummary(item: TechnicianIncidentSummary): IncidentSummary {
 
 /**
  * Servicio real del técnico conectado a TechnicianController (/api/v1/technician).
+ * Siempre consulta con onlyMine=true para que cada técnico vea y gestione
+ * únicamente las incidencias asignadas a él.
  */
 export const technicianService = {
   /**
-   * Bandeja del técnico: casos CONFIRMADA, EN_ATENCION o REABIERTA.
-   * GET /api/v1/technician/incidents
+   * Bandeja del técnico: casos CONFIRMADA, EN_ATENCION o REABIERTA asignados al técnico autenticado.
+   * GET /api/v1/technician/incidents?onlyMine=true
    */
   async getAssignedTasks(
     filters?: TechnicianTasksFilter
@@ -57,7 +59,7 @@ export const technicianService = {
         params: {
           status: filters?.status || undefined,
           sector: filters?.sector?.trim() || undefined,
-          onlyMine: filters?.onlyMine ?? false,
+          onlyMine: true,
           page: 0,
           size: PAGE_SIZE,
         },
@@ -65,12 +67,7 @@ export const technicianService = {
     );
     const me = session.getUser()?.id;
     return data.content
-      .filter(
-        (item) =>
-          filters?.onlyMine ||
-          !item.assignedTechnicianId ||
-          item.assignedTechnicianId === me
-      )
+      .filter((item) => !me || item.assignedTechnicianId === me)
       .map(toIncidentSummary);
   },
 
@@ -106,8 +103,8 @@ export const technicianService = {
   },
 
   /**
-   * Historial de tareas cumplidas (casos RESUELTA o CERRADA).
-   * GET /api/v1/technician/incidents/history
+   * Historial personal de tareas cumplidas del técnico (casos RESUELTA o CERRADA).
+   * GET /api/v1/technician/incidents/history?onlyMine=true
    */
   async getCompletedHistory(
     filters?: TechnicianHistoryFilter
@@ -116,14 +113,17 @@ export const technicianService = {
       '/v1/technician/incidents/history',
       {
         params: {
-          onlyMine: filters?.onlyMine ?? false,
+          onlyMine: true,
           sector: filters?.sector?.trim() || undefined,
           page: 0,
           size: PAGE_SIZE,
         },
       }
     );
-    return data.content.map(toIncidentSummary);
+    const me = session.getUser()?.id;
+    return data.content
+      .filter((item) => !me || item.assignedTechnicianId === me)
+      .map(toIncidentSummary);
   },
 
   /**
