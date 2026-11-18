@@ -105,7 +105,7 @@ export interface TechnicianIncidentView {
 }
 
 /**
- * Corresponde a OperatorDtos.IncidentSummary
+ * Corresponde a OperatorDtos.IncidentSummary (y fila normalizada de bandeja)
  */
 export interface IncidentSummary {
   id: string;
@@ -121,8 +121,11 @@ export interface IncidentSummary {
   lastReportedAt: string;
   confirmedAt: string | null;
   confirmedBy: string | null;
+  confirmedByName?: string | null;
   assignedTechnicianId?: string | null;
+  assignedTechnicianName?: string | null;
   assignedAt?: string | null;
+  estimatedScope?: string;
   closedAt: string | null;
   updatedAt: string;
   version: number;
@@ -179,6 +182,17 @@ export interface IncidentDetail {
 export interface StatusRequest {
   status: 'EN_ATENCION' | 'RESUELTA';
   note?: string;
+}
+
+export interface TechnicianTasksFilter {
+  status?: 'CONFIRMADA' | 'EN_ATENCION' | 'REABIERTA';
+  sector?: string;
+  onlyMine?: boolean;
+}
+
+export interface TechnicianHistoryFilter {
+  sector?: string;
+  onlyMine?: boolean;
 }
 
 /**

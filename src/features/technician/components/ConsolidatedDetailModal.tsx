@@ -189,6 +189,16 @@ export function ConsolidatedDetailModal({
                       {formatDateTime(currentData.lastReportedAt)}
                     </span>
                   </div>
+                  {currentData.confirmedAt && (
+                    <div>
+                      <span className="block font-semibold uppercase text-slate-400">
+                        Confirmado
+                      </span>
+                      <span className="mt-0.5 block text-slate-700">
+                        {formatDateTime(currentData.confirmedAt)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -234,7 +244,7 @@ export function ConsolidatedDetailModal({
                           <th className="px-3.5 py-2.5">Dirección / Referencia</th>
                           <th className="px-3.5 py-2.5">Tipo Falla</th>
                           <th className="px-3.5 py-2.5">Descripción</th>
-                          <th className="px-3.5 py-2.5">Estado Vínculo</th>
+                          <th className="px-3.5 py-2.5">Vínculo / Certeza</th>
                           <th className="px-3.5 py-2.5">Fecha Reporte</th>
                         </tr>
                       </thead>
@@ -251,6 +261,12 @@ export function ConsolidatedDetailModal({
                               <p className="text-[11px] text-slate-500">
                                 {report.sector || 'Sin sector'}
                               </p>
+                              {report.latitude != null &&
+                                report.longitude != null && (
+                                  <p className="mt-0.5 font-mono text-[10px] text-slate-400">
+                                    {report.latitude}, {report.longitude}
+                                  </p>
+                                )}
                             </td>
                             <td className="whitespace-nowrap px-3.5 py-3 font-medium text-slate-700">
                               {formatFailureType(report.failureType)}
@@ -259,10 +275,18 @@ export function ConsolidatedDetailModal({
                               {report.description}
                             </td>
                             <td className="whitespace-nowrap px-3.5 py-3">
-                              <StatusBadge
-                                variant="linkStatus"
-                                value={report.linkStatus}
-                              />
+                              <div className="flex flex-col items-start gap-1">
+                                <StatusBadge
+                                  variant="linkStatus"
+                                  value={report.linkStatus}
+                                />
+                                {report.certainty && (
+                                  <StatusBadge
+                                    variant="certainty"
+                                    value={report.certainty}
+                                  />
+                                )}
+                              </div>
                             </td>
                             <td className="whitespace-nowrap px-3.5 py-3 text-slate-500">
                               {formatDateTime(report.reportedAt)}

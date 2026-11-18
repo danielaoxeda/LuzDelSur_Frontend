@@ -24,22 +24,19 @@ export interface AuthResponse {
 }
 
 /**
- * `role` es opcional en el backend: si se envia y no coincide con la cuenta,
- * el login responde 403 con un mensaje claro.
+ * Credenciales de inicio de sesión. El backend determina el rol y permisos
+ * asociados a la cuenta.
  */
 export interface LoginRequest {
   username: string;
   password: string;
-  role?: ActorRole;
 }
 
 /**
- * El registro publico crea cuentas CLIENTE. Las de operador y tecnico las crea
- * un operador (o la semilla de demo).
+ * Solicitud de registro público de cuenta.
  */
 export interface RegisterRequest {
   name: string;
   username: string;
   password: string;
-  role?: ActorRole;
 }

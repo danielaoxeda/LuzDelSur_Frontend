@@ -13,6 +13,7 @@ import {
   formatFailureType,
   formatShortId,
 } from '../../../shared/components/StatusBadge';
+import { useAuth } from '../../../shared/context/AuthContext';
 import { useNotification } from '../../../shared/context/NotificationContext';
 import { extractApiErrorMessage } from '../../../shared/services/api';
 import { ConsolidatedDetailModal } from '../components/ConsolidatedDetailModal';
@@ -21,34 +22,41 @@ import { technicianService } from '../services/technician.service';
 import type { IncidentSummary } from '../types/technician.types';
 
 export function TechnicianTasksPage() {
+  const { user } = useAuth();
   const { success, error: notifyError } = useNotification();
 
   const [incidents, setIncidents] = useState<IncidentSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [onlyMine, setOnlyMine] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null);
   const [incidentToResolve, setIncidentToResolve] =
     useState<IncidentSummary | null>(null);
 
-  const refreshTasks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const list = await technicianService.getAssignedTasks();
-      setIncidents(list);
-    } catch (err) {
-      notifyError(
-        'Error al cargar tareas',
-        extractApiErrorMessage(err, 'No se pudieron obtener las incidencias.')
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [notifyError]);
+  const refreshTasks = useCallback(
+    async (mineFilter = onlyMine) => {
+      setLoading(true);
+      try {
+        const list = await technicianService.getAssignedTasks({
+          onlyMine: mineFilter,
+        });
+        setIncidents(list);
+      } catch (err) {
+        notifyError(
+          'Error al cargar tareas',
+          extractApiErrorMessage(err, 'No se pudieron obtener las incidencias.')
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onlyMine, notifyError]
+  );
 
   useEffect(() => {
     let active = true;
     technicianService
-      .getAssignedTasks()
+      .getAssignedTasks({ onlyMine })
       .then((list) => {
         if (active) setIncidents(list);
       })
@@ -70,7 +78,12 @@ export function TechnicianTasksPage() {
     return () => {
       active = false;
     };
-  }, [notifyError]);
+  }, [onlyMine, notifyError]);
+
+  const handleToggleOnlyMine = (nextValue: boolean) => {
+    setLoading(true);
+    setOnlyMine(nextValue);
+  };
 
   const handleStartAttention = async (incident: IncidentSummary) => {
     setProcessingId(incident.id);
@@ -126,15 +139,29 @@ export function TechnicianTasksPage() {
             </h1>
           </div>
 
-          <button
-            type="button"
-            onClick={() => void refreshTasks()}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualizar</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+              <input
+                type="checkbox"
+                checked={onlyMine}
+                onChange={(e) => handleToggleOnlyMine(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-slate-300 accent-[#0B132B]"
+              />
+              <span>Solo asignadas a mí</span>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => void refreshTasks()}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
+              />
+              <span>Actualizar</span>
+            </button>
+          </div>
         </div>
 
         {/* Contenido */}
@@ -151,7 +178,9 @@ export function TechnicianTasksPage() {
               No hay incidencias pendientes de atención en este momento.
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Todas las tareas asignadas han sido atendidas.
+              {onlyMine
+                ? 'No tienes incidencias asignadas directamente en este momento.'
+                : 'Todas las tareas confirmadas han sido atendidas.'}
             </p>
           </div>
         ) : (
@@ -164,6 +193,9 @@ export function TechnicianTasksPage() {
                   incident.status === 'CONFIRMADA' ||
                   incident.status === 'REABIERTA';
                 const canResolve = incident.status === 'EN_ATENCION';
+                const isMine =
+                  Boolean(user?.id) &&
+                  incident.assignedTechnicianId === user?.id;
 
                 return (
                   <div key={incident.id} className="space-y-3 p-4">
@@ -175,6 +207,11 @@ export function TechnicianTasksPage() {
                         <p className="text-xs font-semibold text-slate-700">
                           {incident.sector}
                         </p>
+                        {isMine && (
+                          <span className="mt-1 inline-block rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                            Asignada a ti
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap items-center justify-end gap-1.5">
                         <StatusBadge
@@ -262,6 +299,9 @@ export function TechnicianTasksPage() {
                       incident.status === 'CONFIRMADA' ||
                       incident.status === 'REABIERTA';
                     const canResolve = incident.status === 'EN_ATENCION';
+                    const isMine =
+                      Boolean(user?.id) &&
+                      incident.assignedTechnicianId === user?.id;
 
                     return (
                       <tr
@@ -281,6 +321,11 @@ export function TechnicianTasksPage() {
                           <p className="font-bold text-slate-900">
                             {incident.sector}
                           </p>
+                          {isMine && (
+                            <span className="mt-0.5 inline-block rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                              Asignada a ti
+                            </span>
+                          )}
                         </td>
 
                         <td className="whitespace-nowrap px-6 py-4 font-semibold text-slate-700">

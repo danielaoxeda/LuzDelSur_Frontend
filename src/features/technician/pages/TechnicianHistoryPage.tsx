@@ -27,6 +27,7 @@ export function TechnicianHistoryPage() {
 
   const [incidents, setIncidents] = useState<IncidentSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [onlyMine, setOnlyMine] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(
@@ -36,28 +37,33 @@ export function TechnicianHistoryPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
-  const refreshHistory = useCallback(async () => {
-    setLoading(true);
-    try {
-      const list = await technicianService.getCompletedHistory();
-      setIncidents(list);
-    } catch (err) {
-      notifyError(
-        'Error al cargar historial',
-        extractApiErrorMessage(
-          err,
-          'No se pudo obtener el historial de incidencias.'
-        )
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [notifyError]);
+  const refreshHistory = useCallback(
+    async (mineFilter = onlyMine) => {
+      setLoading(true);
+      try {
+        const list = await technicianService.getCompletedHistory({
+          onlyMine: mineFilter,
+        });
+        setIncidents(list);
+      } catch (err) {
+        notifyError(
+          'Error al cargar historial',
+          extractApiErrorMessage(
+            err,
+            'No se pudo obtener el historial de incidencias.'
+          )
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onlyMine, notifyError]
+  );
 
   useEffect(() => {
     let active = true;
     technicianService
-      .getCompletedHistory()
+      .getCompletedHistory({ onlyMine })
       .then((list) => {
         if (active) setIncidents(list);
       })
@@ -79,7 +85,12 @@ export function TechnicianHistoryPage() {
     return () => {
       active = false;
     };
-  }, [notifyError]);
+  }, [onlyMine, notifyError]);
+
+  const handleToggleOnlyMine = (nextValue: boolean) => {
+    setLoading(true);
+    setOnlyMine(nextValue);
+  };
 
   const handleOpenAuditDetail = async (incidentId: string) => {
     setSelectedIncidentId(incidentId);
@@ -142,7 +153,7 @@ export function TechnicianHistoryPage() {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        {/* Barra de búsqueda */}
+        {/* Barra de búsqueda y filtros */}
         <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-md">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -155,15 +166,29 @@ export function TechnicianHistoryPage() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => void refreshHistory()}
-            disabled={loading}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualizar</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+              <input
+                type="checkbox"
+                checked={onlyMine}
+                onChange={(e) => handleToggleOnlyMine(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-slate-300 accent-[#0B132B]"
+              />
+              <span>Solo mis atenciones</span>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => void refreshHistory()}
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
+              />
+              <span>Actualizar</span>
+            </button>
+          </div>
         </div>
 
         {/* Contenido */}
