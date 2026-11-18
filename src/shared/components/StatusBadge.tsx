@@ -132,9 +132,20 @@ export function formatIncidentStatus(status: IncidentStatus): string {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
+export function formatPriorityLabel(priority: PriorityLabel): string {
+  return PRIORITY_STYLES[priority]?.label ?? priority;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
 export function formatShortId(uuid: string): string {
   if (!uuid) return '—';
   return `#INC-${uuid.slice(0, 8).toUpperCase()}`;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function formatReportShortId(uuid: string): string {
+  if (!uuid) return '—';
+  return `#REP-${uuid.slice(0, 8).toUpperCase()}`;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
