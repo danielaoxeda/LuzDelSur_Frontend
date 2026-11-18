@@ -4,25 +4,20 @@ import {
   Activity,
   AlertTriangle,
   ArrowRight,
-  CheckCircle2,
   Clock,
-  FileText,
   Loader2,
   RefreshCw,
   ShieldAlert,
-  Timer,
   UserX,
 } from 'lucide-react';
 import {
   formatDateTime,
-  formatFailureType,
   formatIncidentStatus,
   formatPriorityLabel,
 } from '../../../shared/components/StatusBadge';
 import { useNotification } from '../../../shared/context/NotificationContext';
 import { extractApiErrorMessage } from '../../../shared/services/api';
 import type {
-  FailureType,
   IncidentStatus,
   PriorityLabel,
 } from '../../../shared/types/domain.types';
@@ -199,16 +194,6 @@ export function OperatorDashboardPage() {
         .sort((a, b) => b.value - a.value)
     : [];
 
-  const failureRows: DistributionRow[] = metrics
-    ? (Object.keys(metrics.openByFailureType) as FailureType[])
-        .map((failure) => ({
-          label: formatFailureType(failure),
-          value: metrics.openByFailureType[failure] ?? 0,
-        }))
-        .filter((row) => row.value > 0)
-        .sort((a, b) => b.value - a.value)
-    : [];
-
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -263,63 +248,49 @@ export function OperatorDashboardPage() {
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               icon={Activity}
-              label="Incidencias abiertas"
+              label="Casos abiertos"
               value={String(metrics.openIncidents)}
-              hint="Casos SUGERIDA, CONFIRMADA, EN ATENCIÓN o REABIERTA."
+              hint="SUGERIDA, CONFIRMADA, EN ATENCIÓN o REABIERTA."
               iconClasses="bg-blue-50 text-blue-700"
             />
             <MetricCard
               icon={ShieldAlert}
-              label="Pendientes de revisión"
+              label="Por revisar"
               value={String(metrics.pendingReview)}
-              hint="Casos SUGERIDA que esperan confirmación del operador."
+              hint="Casos sugeridos que esperan tu confirmación."
               iconClasses="bg-amber-50 text-amber-700"
             />
             <MetricCard
               icon={UserX}
-              label="Confirmadas sin asignar"
+              label="Sin técnico"
               value={String(metrics.unassignedConfirmed)}
-              hint="Casos confirmados que aún no tienen un técnico."
+              hint="Casos confirmados listos para asignar."
               iconClasses="bg-rose-50 text-rose-700"
             />
             <MetricCard
               icon={AlertTriangle}
-              label="Baja certeza abiertas"
+              label="Baja certeza"
               value={String(metrics.lowCertaintyOpen)}
-              hint="Casos abiertos con agrupación de baja certeza."
+              hint="Agrupaciones abiertas que requieren revisión."
               iconClasses="bg-orange-50 text-orange-700"
-            />
-            <MetricCard
-              icon={FileText}
-              label="Reportes últimas 24 h"
-              value={String(metrics.reportsLast24h)}
-              hint="Reportes individuales registrados en las últimas 24 horas."
-              iconClasses="bg-emerald-50 text-emerald-700"
-            />
-            <MetricCard
-              icon={CheckCircle2}
-              label="Incidencias últimas 24 h"
-              value={String(metrics.incidentsLast24h)}
-              hint="Casos nuevos creados en las últimas 24 horas."
-              iconClasses="bg-indigo-50 text-indigo-700"
-            />
-            <MetricCard
-              icon={Timer}
-              label="Tiempo medio a confirmar"
-              value={formatMinutes(metrics.avgMinutesToConfirm)}
-              hint="Desde el primer reporte hasta la confirmación del caso."
-              iconClasses="bg-slate-100 text-slate-700"
-            />
-            <MetricCard
-              icon={Clock}
-              label="Tiempo medio a resolver"
-              value={formatMinutes(metrics.avgMinutesToResolve)}
-              hint="Desde el primer reporte hasta el evento RESUELTA."
-              iconClasses="bg-teal-50 text-teal-700"
             />
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-3">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-[11px] font-semibold text-slate-600 shadow-sm sm:px-5">
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-slate-400" />
+              Últimas 24 h: {metrics.reportsLast24h} reporte(s) ·{' '}
+              {metrics.incidentsLast24h} caso(s) nuevo(s)
+            </span>
+            <span>
+              Tiempo medio a confirmar: {formatMinutes(metrics.avgMinutesToConfirm)}
+            </span>
+            <span>
+              Tiempo medio a resolver: {formatMinutes(metrics.avgMinutesToResolve)}
+            </span>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
             <DistributionPanel
               title="Casos por estado"
               subtitle="Todas las incidencias registradas."
@@ -330,12 +301,6 @@ export function OperatorDashboardPage() {
               title="Prioridad de casos abiertos"
               subtitle="Distribución de la prioridad calculada."
               rows={priorityRows}
-              emptyLabel="No hay casos abiertos."
-            />
-            <DistributionPanel
-              title="Tipo de falla abierta"
-              subtitle="Solo casos actualmente abiertos."
-              rows={failureRows}
               emptyLabel="No hay casos abiertos."
             />
           </div>
