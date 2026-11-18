@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -13,20 +13,61 @@ import {
   formatFailureType,
   formatReportShortId,
 } from '../../../shared/components/StatusBadge';
-import { TrackByCodeForm } from '../components/TrackByCodeForm';
+import type { IncidentStatus } from '../../../shared/types/domain.types';
 import { useMyReports } from '../hooks/useMyReports';
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50];
+/** Paginacion fija del historial: 15 reportes por pagina. */
+const PAGE_SIZE = 15;
+
+const STATUS_ORDER: IncidentStatus[] = [
+  'SUGERIDA',
+  'CONFIRMADA',
+  'EN_ATENCION',
+  'REABIERTA',
+  'RESUELTA',
+  'CERRADA',
+  'DESCARTADA',
+];
+
+type ReportOrder = 'recent' | 'status';
+
+function statusRank(status?: IncidentStatus | null): number {
+  if (!status) return STATUS_ORDER.length;
+  const index = STATUS_ORDER.indexOf(status);
+  return index === -1 ? STATUS_ORDER.length : index;
+}
 
 export function CustomerReportsPage() {
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
-  const { items, loading, error, pageData, reload } = useMyReports(size, page);
+  const [order, setOrder] = useState<ReportOrder>('recent');
+  const { items, loading, error, total, reload } = useMyReports();
 
-  const totalElements = pageData?.totalElements ?? 0;
-  const totalPages = pageData?.totalPages ?? 0;
-  const hasPrevious = page > 0;
-  const hasNext = totalPages > 0 && page < totalPages - 1;
+  const orderedItems = useMemo(() => {
+    const copy = [...items];
+
+    if (order === 'status') {
+      copy.sort((a, b) => {
+        const difference =
+          statusRank(a.tracking?.incidentStatus) -
+          statusRank(b.tracking?.incidentStatus);
+        if (difference !== 0) return difference;
+        return b.entry.registeredAt.localeCompare(a.entry.registeredAt);
+      });
+      return copy;
+    }
+
+    copy.sort((a, b) => b.entry.registeredAt.localeCompare(a.entry.registeredAt));
+    return copy;
+  }, [items, order]);
+
+  const totalPages = Math.max(1, Math.ceil(orderedItems.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages - 1);
+  const pageItems = orderedItems.slice(
+    currentPage * PAGE_SIZE,
+    (currentPage + 1) * PAGE_SIZE
+  );
+  const hasPrevious = currentPage > 0;
+  const hasNext = currentPage < totalPages - 1;
 
   return (
     <div className="space-y-6">
@@ -39,8 +80,7 @@ export function CustomerReportsPage() {
                 Historial de Reportes
               </h1>
               <p className="text-xs text-slate-500">
-                Reportes registrados con tu cuenta, del más reciente al más
-                antiguo.
+                Reportes registrados con tu cuenta.
               </p>
             </div>
           </div>
@@ -52,7 +92,9 @@ export function CustomerReportsPage() {
               disabled={loading}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
+              />
               <span>Actualizar</span>
             </button>
             <Link
@@ -66,25 +108,22 @@ export function CustomerReportsPage() {
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-[#F8FAFC] px-4 py-2.5 sm:px-6">
           <p className="text-[11px] font-semibold text-slate-600">
-            {totalElements === 0
+            {total === 0
               ? 'Sin reportes registrados'
-              : `${totalElements} reporte(s) en tu historial`}
+              : `${total} reporte(s) en tu historial`}
           </p>
           <label className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
-            Filas por página
+            Ordenar
             <select
-              value={size}
+              value={order}
               onChange={(event) => {
-                setSize(Number(event.target.value));
+                setOrder(event.target.value as ReportOrder);
                 setPage(0);
               }}
               className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-800 focus:border-blue-500 focus:outline-none"
             >
-              {PAGE_SIZE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
+              <option value="recent">Más recientes</option>
+              <option value="status">Por estado</option>
             </select>
           </label>
         </div>
@@ -105,7 +144,7 @@ export function CustomerReportsPage() {
               Consultando el estado de sus reportes...
             </p>
           </div>
-        ) : items.length === 0 ? (
+        ) : pageItems.length === 0 ? (
           <div className="px-4 py-14 text-center">
             <p className="text-sm font-semibold text-slate-700">
               {error
@@ -115,13 +154,13 @@ export function CustomerReportsPage() {
             <p className="mt-1 text-xs text-slate-500">
               {error
                 ? 'Verifique la conexión con el servidor e intente actualizar.'
-                : 'Registre una nueva incidencia o use el código de un reporte anterior para consultarlo.'}
+                : 'Registre una nueva incidencia para verla en este historial.'}
             </p>
           </div>
         ) : (
           <>
             <div className="divide-y divide-slate-200 md:hidden">
-              {items.map(({ entry, tracking }) => (
+              {pageItems.map(({ entry, tracking }) => (
                 <div key={entry.id} className="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -194,12 +233,11 @@ export function CustomerReportsPage() {
                     <th className="px-6 py-3.5">Registrado</th>
                     <th className="px-6 py-3.5">Estado</th>
                     <th className="px-6 py-3.5">Certeza</th>
-                    <th className="px-6 py-3.5">Calificación</th>
                     <th className="px-6 py-3.5 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white text-sm">
-                  {items.map(({ entry, tracking }) => (
+                  {pageItems.map(({ entry, tracking }) => (
                     <tr
                       key={entry.id}
                       className="transition-colors hover:bg-slate-50/70"
@@ -217,7 +255,7 @@ export function CustomerReportsPage() {
                           ? formatFailureType(tracking.report.failureType)
                           : '—'}
                       </td>
-                      <td className="max-w-[300px] px-6 py-4">
+                      <td className="max-w-[340px] px-6 py-4">
                         <p className="truncate text-xs text-slate-700">
                           {tracking
                             ? tracking.report.description
@@ -255,11 +293,6 @@ export function CustomerReportsPage() {
                           <span className="text-xs text-slate-400">—</span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-xs font-semibold text-slate-700">
-                        {tracking?.feedback
-                          ? `${tracking.feedback.rating}/5`
-                          : '—'}
-                      </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right">
                         <Link
                           to={`/cliente/reportes/${entry.id}`}
@@ -279,9 +312,9 @@ export function CustomerReportsPage() {
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-[#F8FAFC] px-4 py-3 sm:px-6">
           <p className="text-[11px] font-semibold text-slate-600">
-            {totalElements === 0
+            {total === 0
               ? 'Sin resultados'
-              : `Página ${page + 1} de ${Math.max(totalPages, 1)}`}
+              : `Página ${currentPage + 1} de ${Math.max(totalPages, 1)}`}
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -303,8 +336,6 @@ export function CustomerReportsPage() {
           </div>
         </div>
       </div>
-
-      <TrackByCodeForm />
     </div>
   );
 }

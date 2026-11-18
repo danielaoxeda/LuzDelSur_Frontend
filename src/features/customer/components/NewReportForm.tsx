@@ -358,7 +358,7 @@ export function NewReportForm() {
       <div className="flex flex-col-reverse gap-2 border-t border-slate-200 bg-[#F8FAFC] px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
         <button
           type="button"
-          onClick={() => navigate('/cliente/panel')}
+          onClick={() => navigate('/cliente/reportes')}
           disabled={isSubmitting}
           className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
         >

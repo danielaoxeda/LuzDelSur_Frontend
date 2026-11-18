@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { RegisterPage } from '../features/auth/pages/RegisterPage';
-import { CustomerDashboardPage } from '../features/customer/pages/CustomerDashboardPage';
 import { CustomerNewReportPage } from '../features/customer/pages/CustomerNewReportPage';
 import { CustomerReportsPage } from '../features/customer/pages/CustomerReportsPage';
 import { CustomerTrackingPage } from '../features/customer/pages/CustomerTrackingPage';
@@ -75,11 +74,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/cliente/panel" replace />,
-      },
-      {
-        path: 'panel',
-        element: <CustomerDashboardPage />,
+        element: <Navigate to="/cliente/nueva" replace />,
       },
       {
         path: 'nueva',
